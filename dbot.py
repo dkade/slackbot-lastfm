@@ -5,6 +5,9 @@ from bs4 import BeautifulSoup,Tag
 from helpers.config import Config
 import requests
 import pickle
+import sys
+sys.getdefaultencoding()
+
 
 # filename for user list
 FILENAME="userlist"
