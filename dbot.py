@@ -1,7 +1,7 @@
 import os
 import time
 from slackclient import SlackClient
-from bs4 import BeautifulSoup
+from bs4 import BeautifulSoup,Tag
 import requests
 import pickle
 
@@ -49,6 +49,31 @@ def getSong(username):
     else:
         return "*hasn't scrobled anything in a while!*"
 
+def getRandomBand():
+  url = 'https://www.metal-archives.com/band/random'
+  bstats = None
+  try:
+    url_next=requests.head(url, timeout=100).headers.get('location', url)
+    band_page = requests.get(url_next)
+    soup = BeautifulSoup(band_page.content, "html.parser")
+    band_name = soup.find("h1", "band_name").a.text
+    bstats = soup.select("div[id=band_stats]")
+    stats=[]
+  except Exception as e:
+      print("Something went very wong")
+      print(e)
+  if bstats is None:
+      return "Something is fucky with metal-archives!!!"
+  for line in bstats:
+    for child in line.find_all_next("dl"):
+      for item in child.children:
+        if isinstance(item, Tag):
+          stats.append(item.text)
+  dict_stats = dict(zip(stats[0::2], stats[1::2]))
+  return band_name + " ( " + url_next + " ) " + dict_stats['Genre:'] + ' from ' + dict_stats['Country of origin:'] + ' ('+dict_stats['Status:']+')'
+
+
+
 # Example of a JSON received by the bot
 # [{'team': 'T625JDJ3V', 'type': 'message', 'channel': 'C6K3HPFQ1', 'user': 'U6S7R20M8', 'text': '.np', 'ts': '1502197658.841748', 'source_team': 'T62AJ6J3V'}]
 
@@ -72,6 +97,8 @@ def handle_command(command, channel, user):
         save_obj(lastfm_list, FILENAME)
         response = "<@" + user +"> last fm user set to: " + lastfm_list[user]
         #response = "Sure...write some more code then I can do that!"
+    elif command.startswith(".random" , 0):
+        response = getRandomBand()
     else:
         response = "<@" + user +"> available commands: *.np* and *.set <username>*"
     if response:
