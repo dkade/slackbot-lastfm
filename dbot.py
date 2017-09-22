@@ -2,23 +2,24 @@ import os
 import time
 from slackclient import SlackClient
 from bs4 import BeautifulSoup,Tag
+from helpers.config import Config
 import requests
 import pickle
 
 # filename for user list
 FILENAME="userlist"
 
-# starterbot's ID as an environment variable
-BOT_ID = 'U6KLQ0W5D'
+
+BOT_ID = Config.get('global', 'bot_id')
 
 # constants
 AT_BOT = "<@" + BOT_ID + ">"
 EXAMPLE_COMMAND = "do"
-COMMAND_CHANNEL="C6K3HPLQ2" #channel where the bot will serve commands TODO: block to channel
-MASTER="U627R20M1" #IF you want to use a master user for special commands TODO
+COMMAND_CHANNEL= Config.get('global', 'channel') #channel where the bot will serve commands TODO: block to channel
+MASTER= Config.get('global', 'owner') #IF you want to use a master user for special commands TODO
 
 # instantiate Slack & Twilio clients
-slack_client = SlackClient('<bot-key>')
+slack_client = SlackClient(Config.get('global', 'bot_key'))
 lastfm_list = {}
 
 def save_obj(obj, name ):
