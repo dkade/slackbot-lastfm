@@ -14,4 +14,4 @@ Follow this guide to create the slackbot on slack, you will need the ID
 https://kazuar.github.io/building-slack-game-part1/
 
 
-Python Requirements Slackclient, BeautifulSoup4, requests and pickle (TODO: add requirements.txt)
+Python Requirements Slackclient, BeautifulSoup4, requests, pickle and configparser (TODO: add requirements.txt)
