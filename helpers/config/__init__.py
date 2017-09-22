@@ -15,7 +15,7 @@ class Config:
         if Config._config_parser is not False:
             return None
 
-        from ConfigParser import RawConfigParser
+        from configparser import RawConfigParser
         Config._config_parser = RawConfigParser()
         Config._config_parser.read(Config._get_config_filename())
 
