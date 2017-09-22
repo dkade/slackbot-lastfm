@@ -11,7 +11,7 @@ This code is far from optimized as it was made on a run just for a test.
 .np
 .random 
 
-* set <lastfm username>
+* set \<lastfm username\>
 * np
   will make the bot tell the channel what you are currently listening (scrobling on lastfm)
 * random
@@ -23,7 +23,7 @@ Follow this guide to create the slackbot on slack, you will need the ID https://
 
 ## Python Requirements 
 ```
-Slackclient, BeautifulSoup4, requests, pickle and configparser
+Slackclient, BeautifulSoup4, requests, pickle and ConfigParser
 ```
 
 ## ToDo
