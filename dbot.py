@@ -6,6 +6,7 @@ from helpers.config import Config
 import requests
 import pickle
 import sys
+import json
 sys.getdefaultencoding()
 
 
@@ -53,6 +54,25 @@ def getSong(username):
     else:
         return "*hasn't scrobled anything in a while!*"
 
+def getSongViaAPI(username):
+    url = "https://ws.audioscrobbler.com/2.0/?method=user.getrecenttracks&user="+ username +"&api_key=" + Config.get('global', 'last_fm_api_key') + "&format=json"
+    print(url)
+    r = requests.get(url, verify=True)
+    songs = json.loads(r.content.decode('utf-8').replace("\u012a", ""))
+    song_name = songs["recenttracks"]["track"][0]["name"]
+    song_artist = songs["recenttracks"]["track"][0]["artist"]["#text"]
+    song_album = songs["recenttracks"]["track"][0]["album"]["#text"]
+    try:
+        now_playing = songs["recenttracks"]["track"][0]["@attr"]["nowplaying"]
+        response_text = "Listening to :musical_note: *" + song_artist + " - " + song_name + "* | Album: " + song_album
+        print(response_text)
+        return response_text
+    except Exception as e:
+        response_text = "Listened to :musical_note: *" + song_artist + " - " + song_name + "* | Album: " + song_album
+
+        return response_text
+
+
 def getRandomBand():
   url = 'https://www.metal-archives.com/band/random'
   bstats = None
@@ -92,8 +112,8 @@ def handle_command(command, channel, user):
         if user in lastfm_list:
             print (lastfm_list[user])
             print("Scrubing...")
-            print(getSong(lastfm_list[user]))
-            response = "<@" + user + "> " + getSong(lastfm_list[user])
+            print(getSongViaAPI(lastfm_list[user]))
+            response = "<@" + user + "> " + getSongViaAPI(lastfm_list[user])
         else:
             response = "<@" + user +"> to set you last fm user, type: .set <username>"
     elif command.startswith(".set" , 0):
@@ -175,6 +195,7 @@ def run():
     --------
     n/a
     """
+    print("Connecting and running!")
     running = _auto_reconnect(slack_client.rtm_connect())
     while running:
         #print("StarterBot connected and running!")
@@ -191,15 +212,3 @@ def run():
             running = _auto_reconnect(slack_client.rtm_connect())
 
 run()
-
-# if __name__ == "__main__":
-#     READ_WEBSOCKET_DELAY = 1 # 1 second delay between reading from firehose
-#     if slack_client.rtm_connect():
-#         print("StarterBot connected and running!")
-#         while True:
-#             command, channel, user = parse_slack_output(slack_client.rtm_read())
-#             if command and channel and user:
-#                 handle_command(command, channel, user)
-#             time.sleep(READ_WEBSOCKET_DELAY)
-#     else:
-#         print("Connection failed. Invalid Slack token or bot ID?")
