@@ -12,7 +12,6 @@ sys.getdefaultencoding()
 # filename for user list
 FILENAME="userlist"
 
-
 BOT_ID = Config.get('global', 'bot_id')
 
 # constants
@@ -20,10 +19,11 @@ AT_BOT = "<@" + BOT_ID + ">"
 EXAMPLE_COMMAND = "do"
 COMMAND_CHANNEL= Config.get('global', 'channel') #channel where the bot will serve commands TODO: block to channel
 MASTER= Config.get('global', 'owner') #IF you want to use a master user for special commands TODO
-
+READ_WEBSOCKET_DELAY=1 #Delay in seconds
 # instantiate Slack & Twilio clients
 slack_client = SlackClient(Config.get('global', 'bot_key'))
 lastfm_list = {}
+
 
 def save_obj(obj, name ):
     with open(name + '.pkl', 'wb') as f:
@@ -128,14 +128,78 @@ def parse_slack_output(slack_rtm_output):
               return output['text'], output['channel'], output['user']
   return None, None, None
 
-if __name__ == "__main__":
-    READ_WEBSOCKET_DELAY = 1 # 1 second delay between reading from firehose
-    if slack_client.rtm_connect():
-        print("StarterBot connected and running!")
-        while True:
+# To prevent a bug! https://github.com/slackapi/python-slackclient/issues/118
+def _auto_reconnect(running):
+    """Validates the connection boolean returned via `SlackClient.rtm_connect()`
+    if running is False:
+        * Attempt to auto reconnect a max of 5 times
+        * For every attempt, delay reconnection (F_n)*5, where n = num of retries
+    Parameters
+    -----------
+    running : bool
+        The boolean value returned via `SlackClient.rtm_connect()`
+    Returns
+    --------
+    running : bool
+        The validated boolean value returned via `SlackClient.rtm_connect()`
+    """
+    retries = 0
+    max_retries = 5
+    while not running:
+        if retries < max_retries:
+            retries += 1
+            try:
+                # delay for longer and longer each retry in case of extended outages
+                current_delay = (retries + (retries - 1))*5 # fibonacci, bro
+                print("Trying to connect...")
+                time.sleep(READ_WEBSOCKET_DELAY)
+                running = slack_client.rtm_connect()
+            except KeyboardInterrupt:
+                print("KeyboardInterrupt received.")
+                break
+        else:
+            print("Max retries exceeded")
+            break
+    return running
+
+def run():
+    """Passes the `SlackClient.rtm_connect()` method into `self._auto_reconnect()` for validation
+    if running:
+        * Capture and parse events via `Slacker.process_events()` every second
+        * Close gracefully on KeyboardInterrupt (for testing)
+        * log any Exceptions and try to reconnect if needed
+    Parameters
+    -----------
+    n/a
+    Returns
+    --------
+    n/a
+    """
+    running = _auto_reconnect(slack_client.rtm_connect())
+    while running:
+        #print("StarterBot connected and running!")
+        try:
             command, channel, user = parse_slack_output(slack_client.rtm_read())
             if command and channel and user:
                 handle_command(command, channel, user)
             time.sleep(READ_WEBSOCKET_DELAY)
-    else:
-        print("Connection failed. Invalid Slack token or bot ID?")
+        except KeyboardInterrupt:
+            print("KeyboardInterrupt received.")
+            running = False
+        except Exception as e:
+            print("We are not connected, reconnecting!")
+            running = _auto_reconnect(slack_client.rtm_connect())
+
+run()
+
+# if __name__ == "__main__":
+#     READ_WEBSOCKET_DELAY = 1 # 1 second delay between reading from firehose
+#     if slack_client.rtm_connect():
+#         print("StarterBot connected and running!")
+#         while True:
+#             command, channel, user = parse_slack_output(slack_client.rtm_read())
+#             if command and channel and user:
+#                 handle_command(command, channel, user)
+#             time.sleep(READ_WEBSOCKET_DELAY)
+#     else:
+#         print("Connection failed. Invalid Slack token or bot ID?")
